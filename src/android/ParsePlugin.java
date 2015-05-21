@@ -41,9 +41,9 @@ public class ParsePlugin extends CordovaPlugin {
     private static JSONObject sLaunchNotification = null;
 
     public static void initializeParseWithApplication(Application app) {
+        Parse.enableLocalDatastore(app);
         String appId = getStringByKey(app, "parse_app_id");
         String clientKey = getStringByKey(app, "parse_client_key");
-        Parse.enableLocalDatastore(app);
         Log.d(TAG, "Initializing with parse_app_id: " + appId + " and parse_client_key:" + clientKey);
         Parse.initialize(app, appId, clientKey);
         // If used, don't re-initialized
@@ -69,7 +69,6 @@ public class ParsePlugin extends CordovaPlugin {
             this.getInstallationId(callbackContext);
             return true;
         }
-
         if (action.equals(ACTION_GET_INSTALLATION_OBJECT_ID)) {
             this.getInstallationObjectId(callbackContext);
             return true;
@@ -95,7 +94,7 @@ public class ParsePlugin extends CordovaPlugin {
                 try {
                     sEventCallback = args.getString(0);
                     callbackContext.success();
-                    // if the app was opened from a notification, handle it now that the device is ready
+                    // If the app was opened from a notification, handle it now that the device is ready
                     handleLaunchNotification();
                 } catch (JSONException e) {
                     callbackContext.error("JSONException");
