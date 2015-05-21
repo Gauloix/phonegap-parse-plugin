@@ -194,18 +194,15 @@ public class ParsePlugin extends CordovaPlugin {
 
     // NOTE: Parse currently only stores the first eight dimension pairs per call
     private void trackEvent(final String name, final HashMap<String, String> dimensions, final CallbackContext callbackContext) {
-        cordova.getThreadPool().execute(new Runnable() {
-            public void run() {
-                 ParseAnalytics.trackEvent(name, dimensions);
-                 callbackContext.success();
-            }
-        });
+        ParseAnalytics.trackEventInBackground(name, dimensions);
+        Log.d(TAG, "Track event");
+        callbackContext.success();
     }
 
     private HashMap<String, String> getStringMapFromJSONObject(JSONObject object) throws JSONException {
         HashMap<String, String> map = new HashMap<String, String>();
         Iterator<?> i = object.keys();
-        while(i.hasNext()) {
+        while (i.hasNext()) {
             String key = (String)i.next();
             map.put(key, (String)object.get(key));
         }
