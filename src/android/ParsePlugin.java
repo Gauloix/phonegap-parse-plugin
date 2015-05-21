@@ -4,6 +4,8 @@ import android.app.Application;
 import android.util.Log;
 
 import java.util.Set;
+import java.util.Iterator;
+import java.util.HashMap;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
@@ -15,13 +17,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.parse.Parse;
+import com.parse.ParseAnalytics;
 import com.parse.ParseInstallation;
 import com.parse.ParseException;
 import com.parse.PushService;
 import com.parse.ParsePush;
 import com.parse.SaveCallback;
-
-import android.util.Log;
 
 public class ParsePlugin extends CordovaPlugin {
 
@@ -47,6 +48,7 @@ public class ParsePlugin extends CordovaPlugin {
         String clientKey = getStringByKey(app, "parse_client_key");
         Log.d(TAG, "Initializing with parse_app_id: " + appId + " and parse_client_key:" + clientKey);
         Parse.initialize(app, appId, clientKey);
+        ParseInstallation.getCurrentInstallation().saveInBackground();
         // If used, don't re-initialized
         sInitialized = true;
     }
@@ -87,14 +89,12 @@ public class ParsePlugin extends CordovaPlugin {
             return true;
         }
         if (action.equals(ACTION_TRACK_EVENT)) {
-            Map<String, String> dimensions = new HashMap<String, String>();
-            ObjectMapper mapper = new ObjectMapper();
             try {
-                dimensions = mapper.readValue(json, new TypeReference<HashMap<String,String>>(){});
+                HashMap<String, String> dimensions = this.getStringMapFromJSONObject(args.getJSONObject(1));
                 this.trackEvent(args.getString(0), dimensions, callbackContext);
             } catch (Exception e) {
-            	e.printStackTrace();
-            	callbackContext.error("JSONMappingException");
+                e.printStackTrace();
+                callbackContext.error("JSONMappingException");
             }
         }
         return false;
@@ -191,7 +191,7 @@ public class ParsePlugin extends CordovaPlugin {
             }
         });
     }
-    
+
     // NOTE: Parse currently only stores the first eight dimension pairs per call
     private void trackEvent(final String name, final HashMap<String, String> dimensions, final CallbackContext callbackContext) {
         cordova.getThreadPool().execute(new Runnable() {
@@ -200,6 +200,16 @@ public class ParsePlugin extends CordovaPlugin {
                  callbackContext.success();
             }
         });
+    }
+
+    private HashMap<String, String> getStringMapFromJSONObject(JSONObject object) throws JSONException {
+        HashMap<String, String> map = new HashMap<String, String>();
+        Iterator<?> i = object.keys();
+        while(i.hasNext()) {
+            String key = (String)i.next();
+            map.put(key, (String)object.get(key));
+        }
+        return map;
     }
 
     /*
