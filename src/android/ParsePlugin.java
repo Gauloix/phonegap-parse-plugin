@@ -33,6 +33,7 @@ public class ParsePlugin extends CordovaPlugin {
 
     private static CordovaWebView sWebView;
     private static String sEventCallback = null;
+    private static boolean sInitialized = false;
     private static boolean sForeground = false;
     private static JSONObject sLaunchNotification = null;
 
@@ -42,6 +43,8 @@ public class ParsePlugin extends CordovaPlugin {
         Parse.enableLocalDatastore(app);
         Log.d(TAG, "Initializing with parse_app_id: " + appId + " and parse_client_key:" + clientKey);
         Parse.initialize(app, appId, clientKey);
+        // If used, don't re-initialized
+        sInitialized = true;
     }
 
     private static String getStringByKey(Application app, String key) {
@@ -99,6 +102,9 @@ public class ParsePlugin extends CordovaPlugin {
     }
 
     private void initialize(final CallbackContext callbackContext, final JSONArray args) {
+        if (sInitialized) {
+            return;
+        }
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
                 try {
