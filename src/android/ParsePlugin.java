@@ -16,7 +16,10 @@ import org.json.JSONObject;
 
 import com.parse.Parse;
 import com.parse.ParseInstallation;
+import com.parse.ParseException;
 import com.parse.PushService;
+import com.parse.ParsePush;
+import com.parse.SaveCallback;
 
 import android.util.Log;
 
@@ -148,19 +151,32 @@ public class ParsePlugin extends CordovaPlugin {
     }
 
     private void subscribe(final String channel, final CallbackContext callbackContext) {
-        cordova.getThreadPool().execute(new Runnable() {
-            public void run() {
-                PushService.subscribe(cordova.getActivity(), channel, cordova.getActivity().getClass());
-                callbackContext.success();
+        ParsePush.subscribeInBackground(channel, new SaveCallback() {
+            @Override
+            public void done(ParseException e) {
+                if (e == null) {
+                    Set<String> subscriptions = PushService.getSubscriptions(cordova.getActivity());
+                    Log.d(TAG, subscriptions.toString());
+                    ParseInstallation.getCurrentInstallation().saveInBackground();
+                    callbackContext.success();
+                } else {
+                    Log.e(TAG, "Subscribe to channel failed", e);
+                    callbackContext.error(e.getMessage());
+                }
             }
         });
     }
 
     private void unsubscribe(final String channel, final CallbackContext callbackContext) {
-        cordova.getThreadPool().execute(new Runnable() {
-            public void run() {
-                PushService.unsubscribe(cordova.getActivity(), channel);
-                callbackContext.success();
+        ParsePush.unsubscribeInBackground(channel, new SaveCallback() {
+            @Override
+            public void done(ParseException e) {
+                if (e == null) {
+                    callbackContext.success();
+                } else {
+                    Log.e(TAG, "Unsubscribe from channel failed", e);
+                    callbackContext.error(e.getMessage());
+                }
             }
         });
     }
