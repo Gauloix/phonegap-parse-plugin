@@ -33,6 +33,7 @@ public class ParsePlugin extends CordovaPlugin {
     private static final String ACTION_SUBSCRIBE = "subscribe";
     private static final String ACTION_UNSUBSCRIBE = "unsubscribe";
     private static final String ACTION_REGISTER_CALLBACK = "registerCallback";
+    private static final String ACTION_TRACK_EVENT = "trackEvent";
 
     private static CordovaWebView sWebView;
     private static String sEventCallback = null;
@@ -84,6 +85,17 @@ public class ParsePlugin extends CordovaPlugin {
         if (action.equals(ACTION_UNSUBSCRIBE)) {
             this.unsubscribe(args.getString(0), callbackContext);
             return true;
+        }
+        if (action.equals(ACTION_TRACK_EVENT)) {
+            Map<String, String> dimensions = new HashMap<String, String>();
+            ObjectMapper mapper = new ObjectMapper();
+            try {
+                dimensions = mapper.readValue(json, new TypeReference<HashMap<String,String>>(){});
+                this.trackEvent(args.getString(0), dimensions, callbackContext);
+            } catch (Exception e) {
+            	e.printStackTrace();
+            	callbackContext.error("JSONMappingException");
+            }
         }
         return false;
     }
@@ -176,6 +188,16 @@ public class ParsePlugin extends CordovaPlugin {
                     Log.e(TAG, "Unsubscribe from channel failed", e);
                     callbackContext.error(e.getMessage());
                 }
+            }
+        });
+    }
+    
+    // NOTE: Parse currently only stores the first eight dimension pairs per call
+    private void trackEvent(final String name, final HashMap<String, String> dimensions, final CallbackContext callbackContext) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                 ParseAnalytics.trackEvent(name, dimensions);
+                 callbackContext.success();
             }
         });
     }
